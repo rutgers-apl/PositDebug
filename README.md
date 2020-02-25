@@ -54,6 +54,7 @@ otherwise, use the followng line
 6. Build the PSan LLVM pass
 
 ```
+  cd PositDebug/llvm-pass
   mkdir build
   cd build
   cmake ../
