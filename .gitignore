@@ -1,0 +1,7 @@
+SoftPosit/*
+**/*~
+llvm-pass/build/*
+runtime/obj/*
+**/*.o
+regression_tests/error.log
+regression_tests/functions.txt
