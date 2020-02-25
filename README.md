@@ -69,6 +69,7 @@ otherwise, use the followng line
    git clone https://gitlab.com/cerlane/SoftPosit.git
    cd SoftPosit/build/Linux-x86_64-GCC/
    make
+   cd ../../..
 
 ```
   Finally return back to the top-level PositDebug directory
