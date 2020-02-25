@@ -6,7 +6,6 @@ A debugger to detect numerical errors in applications using posits.
 
 1. Get llvm and clang version 9
 ```
-
   wget http://releases.llvm.org/9.0.0/llvm-9.0.0.src.tar.xz
 
   wget http://releases.llvm.org/9.0.0/cfe-9.0.0.src.tar.xz
@@ -15,15 +14,14 @@ A debugger to detect numerical errors in applications using posits.
 2. Build llvm and clang
 
 ```
-      tar -xvf llvm-9.0.0.src.tar.xz
-      mv llvm-9.0.0.src/ llvm
-      tar -xvf cfe-9.0.0.src.tar.xz
-      mv cfe-9.0.0.src/* clang
-      mkdir build
-      cd build
-      cmake -DLLVM_ENABLE_PROJECTS=clang -G "Unix Makefiles" ../llvm
-      make -j8
-
+  tar -xvf llvm-9.0.0.src.tar.xz
+  mv llvm-9.0.0.src/ llvm
+  tar -xvf cfe-9.0.0.src.tar.xz
+  mv cfe-9.0.0.src/* clang
+  mkdir build
+  cd build
+  cmake -DLLVM_ENABLE_PROJECTS=clang -G "Unix Makefiles" ../llvm
+  make -j8
 ```
 
 3. Set env variable LLVM_HOME to the LLVM build directory
@@ -34,21 +32,18 @@ A debugger to detect numerical errors in applications using posits.
 4. Clone PositDebug git repo.
 ```
   git clone https://github.com/rutgers-apl/PositDebug.git
-
 ```
 
 5. If your compiler does not support C++11 by default, add the following line to llvm-pass/PSan/CMakefile
 
 ```
   target_compile_feature(PSanitizer PRIVATE cxx_range_for cxx_auto_type)
-
 ```
 
 otherwise, use the followng line
 
 ```
-        target_compile_features(PSanitizer PRIVATE )
-
+  target_compile_features(PSanitizer PRIVATE )
 ```
 
 6. Build the PSan LLVM pass
@@ -60,7 +55,6 @@ otherwise, use the followng line
   cmake ../
   make
   cd ../..
-
 ```
 
 7. Download and build the SoftPosit library with PositDebug Extensions
@@ -70,24 +64,35 @@ otherwise, use the followng line
    cd SoftPosit/build/Linux-x86_64-GCC/
    make
    cd ../../..
-
 ```
-  Finally return back to the top-level PositDebug directory
 
-8. Try out the tests in regression_tests directory. Set the following environment variables
+8. Set the following environment variables to build the PositDebug runtime environment
+```
+  export PD_HOME=<path to the PositDebug github checkout>
+
+  export SOFTPOSIT_HOME=$PD_HOME/SoftPosit/
+```
+
+9. Build the PositDebug runtime environment
+```
+  cd runtime
+  make
+```
+
+Finally return back to the top-level PositDebug directory
+
+10. Try out the tests in regression_tests directory. Set the following environment variables
 
 ```
   export LLVM_HOME=<LLVM build directory>
 
-  export PATH=<LLVM build directory>/bin:$PATH
-
   export PD_HOME=<path to the PositDebug github checkout>
 
-  export LD_LIBRARY_PATH=$PD_HOME/runtime/obj/
-
   export SOFTPOSIT_HOME=$PD_HOME/SoftPosit/
-  
 
+  export PATH=<LLVM build directory>/bin:$PATH
+
+  export LD_LIBRARY_PATH=$PD_HOME/runtime/obj/
 ```
 
 and then,
@@ -95,7 +100,6 @@ and then,
   make
 
   ./diff-root-simple.pd.o
-
 ```
 
 It should report that there is one instance of  more than 55 bits of error in error.log
