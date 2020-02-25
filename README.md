@@ -84,8 +84,6 @@ otherwise, use the followng line
   export LD_LIBRARY_PATH=$PD_HOME/runtime/obj/
 
   export SOFTPOSIT_HOME=$PD_HOME/SoftPosit/
-
-  export LD_LIBRARY_PATH=$PD_HOME/runtime/obj:$LD_LIBRARY_PATH
   
 
 ```
