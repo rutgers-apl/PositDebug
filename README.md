@@ -59,6 +59,7 @@ otherwise, use the followng line
   cd build
   cmake ../
   make
+  cd ../..
 
 ```
 
