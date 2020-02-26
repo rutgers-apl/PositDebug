@@ -6,7 +6,8 @@ LINKER=g++
 LDFLAGS+= -shared
 OPT=-O0
 
-CXXFLAGS+=-fPIC -g -std=c++11 -rdynamic -Wall -lmpfr -pthread 
+PREC := $(if $(PRECISION),$(PRECISION), "PREC_512")
+CXXFLAGS+= -D $(PREC) -fPIC -g -std=c++11 -rdynamic -Wall -lmpfr -pthread 
 
 INCPATH=-I. -I$(PD_HOME)/include -I$(SOFTPOSIT_HOME)/source/include 
 ARFLAGS=-rcs
