@@ -74,6 +74,7 @@ smem_entry **m_shadow_memory;
 #endif
 
 
+size_t m_precision = PRECISION;
 size_t m_stack_top = 0;
 size_t timestampCounter = 0;
 bool m_init_flag = false;
