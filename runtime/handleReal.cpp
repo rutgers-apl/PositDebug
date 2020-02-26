@@ -420,6 +420,11 @@ unsigned int m_check_cc(posit32_t op1,
                 smem_entry *shadowOp2,
                 smem_entry *shadowVal){
 
+  // If op1 or op2 is NaR, then it is not catastrophic cancellation
+  if (isNaRP32UI(op1.v) || isNaRP32UI(op2.v)) return 0;
+  // If result is 0 and it has error, then it is catastrophic cancellation
+  if (p32_eq(res, convertDoubleToP32(0)) && shadowVal->error != 0) return 1;
+  
   unsigned int ebitsOp1 = m_get_exact_bits(op1, shadowOp1);
   unsigned int ebitsOp2 = m_get_exact_bits(op2, shadowOp2);
   mpfr_exp_t cbits = m_get_cancelled_bits(op1, op2, res);
@@ -480,6 +485,10 @@ extern "C" void pd_mpfr_rapl_p32_add( void* op1Addr,
     cbad = m_check_cc(posOp1->pos, posOp2->pos, computedRes->pos, op1Idx, op2Idx, res);
     if(cbad > 0)
       ccCount++;
+  }
+
+  if (isNaRP32UI(computedRes->pos.v)) {
+    nanCount++;
   }
 }
 
@@ -1019,8 +1028,7 @@ extern "C" void pd_finish() {
   fprintf(m_errfile, "Error above %d bits found %zd\n", ERRORTHRESHOLD2, errorCount45);
   fprintf(m_errfile, "Error above %d bits found %zd\n", ERRORTHRESHOLD1, errorCount35);
   fprintf(m_errfile, "Total CC found %zd\n", ccCount);
-  fprintf(m_errfile, "Total NaN found %zd\n", nanCount);
-  fprintf(m_errfile, "Total Inf found %zd\n", infCount);
+  fprintf(m_errfile, "Total NaR found %zd\n", nanCount);
   fprintf(m_errfile, "Total branch flips found %zd\n", flipsCount);
   fprintf(m_errfile, "Total conversion errors %zd\n", convCount);
   fprintf(m_errfile, "Total minpos or maxpos found %zd\n", countMinPosMaxPos);
