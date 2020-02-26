@@ -54,7 +54,26 @@ struct smem_entry{
 smem_entry *m_shadow_stack;
 smem_entry **m_shadow_memory;
 
-size_t m_precision = 512;
+# if !defined(PREC_128) && !defined(PREC_256) && !defined(PREC_512) && !defined(PREC_1024) 
+#  define PREC_512
+# endif
+
+# if !defined(PRECISION) 
+# ifdef PREC_128
+#   define PRECISION 128
+# endif
+# ifdef PREC_256
+#   define PRECISION 256
+# endif
+# ifdef PREC_512
+#   define PRECISION 512
+# endif
+# ifdef PREC_1024
+#   define PRECISION 1024
+# endif
+#endif
+
+
 size_t m_stack_top = 0;
 size_t timestampCounter = 0;
 bool m_init_flag = false;

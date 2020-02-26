@@ -74,7 +74,7 @@ smem_entry* m_get_shadowaddress(size_t address){
   smem_entry* realAddr = primary_ptr + offset;
   if(!realAddr->is_init){
     realAddr->is_init = true;
-    mpfr_init2(realAddr->val, m_precision);
+    mpfr_init2(realAddr->val, PRECISION);
   }
   return realAddr;
 }
@@ -341,7 +341,7 @@ long m_get_mpfr_long(smem_entry *op) {
 extern "C" void pd_init_mpfr(smem_entry *op) {
   if (!m_init_flag) 
     pd_init();
-  mpfr_init2(op->val, m_precision);
+  mpfr_init2(op->val, PRECISION);
 }
 
 
@@ -988,15 +988,15 @@ extern "C" void pd_init() {
     assert(m_shadow_memory != (void *)-1);
 
     for(int i =0; i<MAX_STACK_SIZE; i++){
-      mpfr_init2(m_shadow_stack[i].val, m_precision);
+      mpfr_init2(m_shadow_stack[i].val, PRECISION);
     }
     m_stack_top = 0;
 
-    mpfr_init2(op1_mpfr, m_precision);
-    mpfr_init2(op2_mpfr, m_precision);
-    mpfr_init2(res_mpfr, m_precision);
-    mpfr_init2(temp_diff, m_precision);
-    mpfr_init2(computed, m_precision);
+    mpfr_init2(op1_mpfr, PRECISION);
+    mpfr_init2(op2_mpfr, PRECISION);
+    mpfr_init2(res_mpfr, PRECISION);
+    mpfr_init2(temp_diff, PRECISION);
+    mpfr_init2(computed, PRECISION);
   }
 }
 
