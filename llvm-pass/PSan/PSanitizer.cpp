@@ -753,31 +753,53 @@ void PSanitizer::handleMemcpy(CallInst *CI, BasicBlock *BB, Function *F){
   Type* VoidTy = Type::getVoidTy(M->getContext());
   Type* PtrVoidTy = PointerType::getUnqual(Type::getInt8Ty(M->getContext()));
   BitCastInst* BCOp1 = new BitCastInst(CI->getOperand(1),
-              PointerType::getUnqual(Type::getInt8Ty(M->getContext())),"", I);
+      PointerType::getUnqual(Type::getInt8Ty(M->getContext())),"", I);
 
+  bool flag = false;
   Value *OP1 = CI->getOperand(0);
   Value *OP2 = CI->getOperand(1);
-//  OP1->stripPointerCasts()->dump();
- // OP1->getType()->dump();
-  //if (BitCastInst *BI = dyn_cast<BitCastInst>(OP1)){
-//  StructType *STy = cast<StructType>(OP1->stripPointerCasts()->getType()->getPointerElementType());
   if (BitCastInst *BI = dyn_cast<BitCastInst>(CI->getOperand(0))){
     Type *BITy = BI->getOperand(0)->getType();
     if(BITy->getPointerElementType()->getTypeID() == Type::StructTyID){
       StructType *STy = cast<StructType>(BITy->getPointerElementType());
-      if(STy->getName() == "struct.posit_t"){
+      if(STy != NULL && STy->getName() == "struct.posit_t"){
         AddFunArg = M->getOrInsertFunction("pd_handle_memcpy", VoidTy, PtrVoidTy, PtrVoidTy);
         IRB.CreateCall(AddFunArg, {OP1, OP2});
+        flag = true;
+      }
+    }
+    else if(BITy->getPointerElementType()->getTypeID() == Type::ArrayTyID){
+      ArrayType *ATy = cast<ArrayType>(BITy->getPointerElementType());
+      if(ATy->getElementType()->getTypeID() == Type::StructTyID){
+        StructType *STy = cast<StructType>(ATy->getElementType());
+        if(STy != NULL && STy->getName() == "struct.posit_t"){
+          AddFunArg = M->getOrInsertFunction("pd_handle_memcpy", VoidTy, PtrVoidTy, PtrVoidTy);
+          IRB.CreateCall(AddFunArg, {OP1, OP2});
+          flag = true;
+        }
       }
     }
   }
-  else if (BitCastInst *BI = dyn_cast<BitCastInst>(CI->getOperand(1))){
-    Type *BITy = BI->getOperand(0)->getType();
-    if(BITy->getPointerElementType()->getTypeID() == Type::StructTyID){
-      StructType *STy = cast<StructType>(BITy->getPointerElementType());
-      if(STy->getName() == "struct.posit_t"){
-        AddFunArg = M->getOrInsertFunction("pd_handle_memcpy", VoidTy, PtrVoidTy, PtrVoidTy);
-        IRB.CreateCall(AddFunArg, {OP1, OP2});
+
+  if(!flag){
+    if (BitCastInst *BI = dyn_cast<BitCastInst>(CI->getOperand(1))){
+      Type *BITy = BI->getOperand(0)->getType();
+      if(BITy->getPointerElementType()->getTypeID() == Type::StructTyID){
+        StructType *STy = cast<StructType>(BITy->getPointerElementType());
+        if(STy != NULL && STy->getName() == "struct.posit_t"){
+          AddFunArg = M->getOrInsertFunction("pd_handle_memcpy", VoidTy, PtrVoidTy, PtrVoidTy);
+          IRB.CreateCall(AddFunArg, {OP1, OP2});
+        }
+      }
+      else if(BITy->getPointerElementType()->getTypeID() == Type::ArrayTyID){
+        ArrayType *ATy = cast<ArrayType>(BITy->getPointerElementType());
+        if(ATy->getElementType()->getTypeID() == Type::StructTyID){
+          StructType *STy = cast<StructType>(ATy->getElementType());
+          if(STy != NULL &&  STy->getName() == "struct.posit_t"){
+            AddFunArg = M->getOrInsertFunction("pd_handle_memcpy", VoidTy, PtrVoidTy, PtrVoidTy);
+            IRB.CreateCall(AddFunArg, {OP1, OP2});
+          }
+        }
       }
     }
   }

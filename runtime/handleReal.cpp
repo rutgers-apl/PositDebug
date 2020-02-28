@@ -935,6 +935,9 @@ extern "C" void pd_get_argument(size_t argIdx, void *dstAddr) {
   smem_entry* dst = m_get_shadowaddress(dstInt);
   smem_entry *src = &(m_shadow_stack[m_stack_top-argIdx]);
 
+  if(!src->is_init){ //caller maybe is not instrumented for set_arg
+    return;
+  }
   m_set_mpfr(&(dst->val), &(src->val));
   dst->timestamp = timestampCounter++;
   dst->computed = src->computed;
@@ -943,10 +946,6 @@ extern "C" void pd_get_argument(size_t argIdx, void *dstAddr) {
   dst->lhs = src->lhs;
   dst->rhs = src->rhs;
   dst->opcode = src->opcode;
-
-  if(!src->is_init){ //caller maybe is not instrumented for set_arg
-    std::cout<<"Error !!!! __get_argument trying to get argument which was not set\n";
-  }
 }
 
 extern "C" void pd_set_argument(size_t argIdx, void* srcAddr) {
