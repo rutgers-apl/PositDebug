@@ -41,12 +41,12 @@ void m_set_mpfr(mpfr_t *val1, mpfr_t *val2) {
 
 void m_set_shadow(smem_entry *op, double d, unsigned int lineno) {
   mpfr_set_d(op->val, d, MPFR_RNDN);
-  op->error = 0;
   op->lineno = lineno;
   op->opcode = CONSTANT;
   op->computed = convertDoubleToP32(d);
-  op->initV = true;
+#ifdef TRACING
   op->error = 0;
+#endif
   if(debug){
     std::cout<<"m_set_shadow: setting:"<<d<<"\n";
     std::cout<<"\n";
@@ -121,15 +121,17 @@ void handle_math_d(fp_op opCode, smem_entry *op,
     default:
       break;
   }
-  unsigned int regime = m_count_p32_regime_bits(computedRes->pos);
-  int bitsError = m_update_error(res, convertP32ToDouble(computedRes->pos), regime);
   res->lineno = lineno;
-  res->timestamp = timestampCounter++;
-  res->error = bitsError;
   res->opcode = opCode;
   res->computed = computedRes->pos;
+#ifdef TRACING
+  unsigned int regime = m_count_p32_regime_bits(computedRes->pos);
+  int bitsError = m_update_error(res, convertP32ToDouble(computedRes->pos), regime);
+  res->timestamp = timestampCounter++;
+  res->error = bitsError;
   res->lhs = op;
   res->rhs = nullptr;
+#endif
 }
 //Count preicison bits in <32,2>
 unsigned int m_count_prec_bits(unsigned ps, unsigned nbit) {
@@ -323,15 +325,17 @@ void m_compute(fp_op opCode,
       // do nothing
       break;
   } 
+  res->lineno = lineno;
+  res->opcode = opCode;
+  res->computed = computedRes->pos;
+#ifdef TRACING
   unsigned int regime = m_count_p32_regime_bits(computedRes->pos);
   int bitsError = m_update_error(res, convertP32ToDouble(computedRes->pos), regime);
-  res->lineno = lineno;
   res->error = bitsError;
-  res->opcode = opCode;
   res->timestamp = timestampCounter++;
-  res->computed = computedRes->pos;
   res->lhs = op1;
   res->rhs = op2;
+#endif
 }
 
 long m_get_mpfr_long(smem_entry *op) {
@@ -358,12 +362,13 @@ extern "C" void pd_set_const(void *toAddr, double d, unsigned int lineno) {
   mpfr_set_d(dst->val, d, MPFR_RNDN);
   dst->lineno = lineno;
   dst->opcode = CONSTANT;
+  dst->computed = convertDoubleToP32(d);
+#ifdef TRACING
   dst->lhs = nullptr;
   dst->rhs = nullptr;
   dst->timestamp = timestampCounter++;
-  dst->computed = convertDoubleToP32(d);
-  dst->initV = true;
   dst->error = 0;
+#endif
   if(debug){
     std::cout<<"pd_set_const: setting"<<d<<"\n";
     std::cout<<"\n";
@@ -383,9 +388,12 @@ extern "C" void pd_store_real(void* toAddr, smem_entry* src){
     //copy val
     m_set_mpfr(&(dst->val), &(src->val));
     //copy everything else except res key and opcode
-    dst->error = src->error;
     dst->lineno = src->lineno;
     dst->computed = src->computed;
+#ifdef TRACING
+//TODO: What about lhs, rhs?
+    dst->error = src->error;
+#endif
   }
   else{
     std::cout<<"Error !!! pd_store_real trying to read invalid memory\n";
@@ -400,10 +408,11 @@ extern "C" void pd_load_shadow(smem_entry *src, void *Addr){
     smem_entry* dst = m_get_shadowaddress(AddrInt);
 
     m_set_mpfr(&(src->val), &(dst->val));
-
-    src->error = dst->error;
     src->lineno = dst->lineno;
     src->computed = dst->computed;
+#ifdef TRACING
+    src->error = dst->error;
+#endif
 
   }
   else{
@@ -412,7 +421,7 @@ extern "C" void pd_load_shadow(smem_entry *src, void *Addr){
     }
   }
 }
-
+#ifdef TRACING
 unsigned int m_check_cc(posit32_t op1,
                 posit32_t op2, 
                 posit32_t res, 
@@ -431,7 +440,7 @@ unsigned int m_check_cc(posit32_t op1,
   unsigned int cbad = m_get_cbad(cbits, ebitsOp1, ebitsOp2);
   return cbad;
 }
-
+#endif
 extern "C" void pd_handle_memcpy(void* dstAddr, void *srcAddr){
   size_t srcInt = (size_t) srcAddr;
   smem_entry* src = m_get_shadowaddress(srcInt);
@@ -440,14 +449,16 @@ extern "C" void pd_handle_memcpy(void* dstAddr, void *srcAddr){
   smem_entry* dst = m_get_shadowaddress(dstInt);
 
   m_set_mpfr(&(dst->val), &(src->val));
-  dst->timestamp = timestampCounter++;
   dst->computed = src->computed;
-  dst->error = src->error;
   dst->lineno = src->lineno;
-  dst->lhs = src->lhs;
-  dst->rhs = src->rhs;
   dst->opcode = src->opcode;
   dst->is_init = true;
+#ifdef TRACING
+  dst->error = src->error;
+  dst->timestamp = timestampCounter++;
+  dst->lhs = src->lhs;
+  dst->rhs = src->rhs;
+#endif
 }
 
 extern "C" void pd_mpfr_rapl_p32_add( void* op1Addr, 
@@ -475,6 +486,7 @@ extern "C" void pd_mpfr_rapl_p32_add( void* op1Addr,
   if(m_is_min_pos_or_max_pos(computedRes->pos)){
     countMinPosMaxPos++;
   }
+#ifdef TRACING
   posit32_t zero = convertDoubleToP32(0);
   unsigned int cbad = 0;
   //check for subtraction
@@ -486,7 +498,7 @@ extern "C" void pd_mpfr_rapl_p32_add( void* op1Addr,
     if(cbad > 0)
       ccCount++;
   }
-
+#endif
   if (isNaRP32UI(computedRes->pos.v)) {
     nanCount++;
   }
@@ -522,6 +534,7 @@ extern "C" void pd_mpfr_rapl_p32_sub( void* op1Addr,
   if(m_is_min_pos_or_max_pos(computedRes->pos)){
     countMinPosMaxPos++;
   }
+#ifdef TRACING
   //check for subtraction
   posit32_t zero = convertDoubleToP32(0);
   unsigned int cbad = 0;
@@ -533,6 +546,7 @@ extern "C" void pd_mpfr_rapl_p32_sub( void* op1Addr,
     if(cbad > 0)
       ccCount++;
   }
+#endif
 }
 
 extern "C" void pd_mpfr_rapl_p32_mul( void* op1Addr, 
@@ -693,15 +707,17 @@ extern "C" void pd_mpfr_pow(void* op1Addr, void* op2Addr, void* resAddr, posit_t
 
   mpfr_pow(res->val, op1Idx->val, op2Idx->val, MPFR_RNDN);
 
-  unsigned int regime = m_count_p32_regime_bits(computedRes->pos);
-  int bitsError = m_update_error(res, convertP32ToDouble(computedRes->pos), regime);
   res->lineno = lineno;
-  res->timestamp = timestampCounter++;
-  res->error = bitsError;
   res->opcode = POW;
   res->computed = computedRes->pos;
+#ifdef TRACING
+  unsigned int regime = m_count_p32_regime_bits(computedRes->pos);
+  int bitsError = m_update_error(res, convertP32ToDouble(computedRes->pos), regime);
+  res->timestamp = timestampCounter++;
+  res->error = bitsError;
   res->lhs = op1Idx;
   res->rhs = op2Idx;
+#endif
 }
 
 extern "C" void pd_mpfr_exp(void* op1Addr, void* resAddr, posit_t* computedRes, 
@@ -825,6 +841,7 @@ std::string m_get_string_opcode(size_t opcode){
   }
 }
 
+#ifdef TRACING
 int m_get_depth(smem_entry *current){
   int depth = 0;
   m_expr.push_back(current);
@@ -854,7 +871,6 @@ int m_get_depth(smem_entry *current){
   }
   return depth;
 }
-
 extern "C" void pd_trace(smem_entry *current){
   m_expr.push_back(current);
   int level;
@@ -889,10 +905,10 @@ extern "C" void pd_trace(smem_entry *current){
     m_expr.pop_front();
     level--;
   }
-  int depth = m_get_depth(current);
-  std::cout<<"depth:"<<depth<<"\n";
+//  int depth = m_get_depth(current);
+//  std::cout<<"depth:"<<depth<<"\n";
 }
-
+#endif
 extern "C" void pd_func_init(long totalArgs) {
   m_stack_top = m_stack_top + totalArgs;
 }
@@ -907,9 +923,11 @@ extern "C" void pd_set_return(smem_entry* src, size_t totalArgs, posit32_t op) {
   if(src != NULL){
     m_set_mpfr(&(dst->val), &(src->val));
     dst->computed = src->computed;
-    dst->error = src->error;
     dst->lineno = src->lineno;
     dst->opcode = src->opcode;
+#ifdef TRACING
+    dst->error = src->error;
+#endif
 
   }
   else{
@@ -920,14 +938,18 @@ extern "C" void pd_set_return(smem_entry* src, size_t totalArgs, posit32_t op) {
 }
 
 //copy return from shadow stack to local alloca var
+//Update: we don't need get and set return as return values as passed as function args with
+//new design.
 extern "C" void pd_get_return(smem_entry* dst) {
   smem_entry *src = &(m_shadow_stack[m_stack_top]); //save return m_stack_top - totalArgs 
   m_set_mpfr(&(dst->val), &(src->val));
   dst->computed = src->computed;
-  dst->error = src->error;
   dst->lineno = src->lineno;
-  dst->timestamp = timestampCounter++;
   dst->opcode = src->opcode;
+#ifdef TRACING
+  dst->timestamp = timestampCounter++;
+  dst->error = src->error;
+#endif
 }
 
 extern "C" void pd_get_argument(size_t argIdx, void *dstAddr) {
@@ -939,13 +961,15 @@ extern "C" void pd_get_argument(size_t argIdx, void *dstAddr) {
     return;
   }
   m_set_mpfr(&(dst->val), &(src->val));
-  dst->timestamp = timestampCounter++;
   dst->computed = src->computed;
-  dst->error = src->error;
   dst->lineno = src->lineno;
+  dst->opcode = src->opcode;
+#ifdef TRACING
+  dst->timestamp = timestampCounter++;
+  dst->error = src->error;
   dst->lhs = src->lhs;
   dst->rhs = src->rhs;
-  dst->opcode = src->opcode;
+#endif
 }
 
 extern "C" void pd_set_argument(size_t argIdx, void* srcAddr) {
@@ -956,14 +980,16 @@ extern "C" void pd_set_argument(size_t argIdx, void* srcAddr) {
 
   if(src != NULL){
     m_set_mpfr(&(dst->val), &(src->val));
-    dst->timestamp = timestampCounter++;
     dst->computed = src->computed;
-    dst->error = src->error;
     dst->lineno = src->lineno;
-    dst->lhs = src->lhs;
-    dst->rhs = src->rhs;
     dst->opcode = src->opcode;
     dst->is_init = true;
+#ifdef TRACING
+    dst->timestamp = timestampCounter++;
+    dst->error = src->error;
+    dst->lhs = src->lhs;
+    dst->rhs = src->rhs;
+#endif
   }
   else{
     std::cout<<"__set_argument Error!!! trying to set null argument\n";
@@ -1062,6 +1088,7 @@ extern "C" unsigned int  pd_check_error(void* realAddr,
 			
   size_t realInt = (size_t) realAddr;
   smem_entry* realRes = m_get_shadowaddress(realInt);
+#ifdef TRACING
   if(realRes->error >= ERRORTHRESHOLD4){
     errorCount63++;
     return 1; 
@@ -1078,6 +1105,26 @@ extern "C" unsigned int  pd_check_error(void* realAddr,
     errorCount35++; 
     return 4; 
   }
+#else
+ int bits_error = m_update_error(realRes, convertP32ToDouble(computedRes), 0);
+  if(bits_error > ERRORTHRESHOLD4){
+    errorCount63++;
+    return 1;
+  }
+  else if(bits_error > ERRORTHRESHOLD3){
+    errorCount55++;
+    return 2;
+  }
+  else if(bits_error > ERRORTHRESHOLD2){
+    errorCount45++;
+    return 3;
+  }
+  else if(bits_error > ERRORTHRESHOLD1){
+    errorCount35++;
+    return 4;
+  }
+
+#endif
   return 0;
 }
 

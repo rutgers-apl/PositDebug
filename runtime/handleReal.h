@@ -29,26 +29,18 @@ enum fp_op{FADD, FSUB, FMUL, FDIV, CONSTANT, SQRT, FLOOR, TAN, SIN, COS, ATAN, A
 FILE* m_errfile;
 FILE* m_brfile;
 
-struct error_info {
-  double error;
-  unsigned int cbad;
-  unsigned int regime;
-  unsigned int lineno;
-  unsigned int colnumber;
-  bool debugInfoAvail;
-};
-
 struct smem_entry{
   mpfr_t val;
-  int error;
   posit32_t computed;
   unsigned int lineno;
   enum fp_op opcode;
   bool is_init;
-  bool initV;
+#ifdef TRACING
   size_t timestamp;
+  int error;
   struct smem_entry* lhs;
   struct smem_entry* rhs;
+#endif
 };
 
 smem_entry *m_shadow_stack;
