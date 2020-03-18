@@ -499,9 +499,6 @@ extern "C" void pd_mpfr_rapl_p32_add( void* op1Addr,
       ccCount++;
   }
 #endif
-  if (isNaRP32UI(computedRes->pos.v)) {
-    nanCount++;
-  }
 }
 
 extern "C" void pd_mpfr_rapl_p32_sub( void* op1Addr, 
@@ -596,6 +593,10 @@ extern "C" void pd_mpfr_rapl_p32_div( void* op1Addr,
   m_compute(FDIV, op1Idx, op2Idx, res ,computedRes, lineno);
   if(m_is_min_pos_or_max_pos(computedRes->pos)){
     countMinPosMaxPos++;
+  }
+  
+  if (isNaRP32UI(computedRes->pos.v)) {
+    nanCount++;
   }
 }
 
