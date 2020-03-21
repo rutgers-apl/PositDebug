@@ -16,6 +16,7 @@
 #define MMAP_FLAGS (MAP_PRIVATE| MAP_ANONYMOUS| MAP_NORESERVE)
 #define MAX_STACK_SIZE 500
 #define MAX_SIZE 1000
+#define TRACING 1
 
 /* Assumption: float types are 4-byte aligned. */
 const size_t SS_PRIMARY_TABLE_ENTRIES = ((size_t) 4194304);//2^22
