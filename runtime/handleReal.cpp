@@ -1005,7 +1005,7 @@ extern "C" void pd_init() {
     //    printf("sizeof posit_t %lu", sizeof(posit_t));
     m_init_flag = true;
     size_t length = MAX_STACK_SIZE * sizeof(smem_entry);
-    size_t memLen = SS_PRIMARY_TABLE_ENTRIES * sizeof(smem_entry);
+    size_t memLen = SS_PRIMARY_TABLE_ENTRIES * sizeof(smem_entry *);
     m_shadow_stack =
       (smem_entry *)mmap(0, length, PROT_READ | PROT_WRITE, MMAP_FLAGS, -1, 0);
     m_shadow_memory =
@@ -1068,10 +1068,15 @@ extern "C" void pd_finish() {
 
 extern "C" unsigned int  pd_check_branch(bool realBr, 
 			bool computedBr, 
-			smem_entry *realRes1, 
-			smem_entry *realRes2){
-  if(realBr != computedBr)
+			void *realRes1, 
+			void *realRes2){
+  size_t realInt1 = (size_t) realRes1;
+  smem_entry* realOp1 = m_get_shadowaddress(realInt1);
+  size_t realInt2 = (size_t) realRes2;
+  smem_entry* realOp2 = m_get_shadowaddress(realInt2);
+  if(realBr != computedBr){
     return 1;
+  }
   return 0;
 }
 
